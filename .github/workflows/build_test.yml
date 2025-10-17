@@ -1,0 +1,53 @@
+name: Weekly Test
+
+on:
+  schedule:
+    # Run every Monday at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:  # Allow manual triggering
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Build dials
+      run: |
+        wget https://raw.githubusercontent.com/dials/dials/main/installer/bootstrap.py
+        python bootstrap.py
+
+    - name: Checkout prime
+      uses: actions/checkout@v4
+      with:
+        path: modules/prime
+
+    - name: Install prime
+      run: |
+        source dials
+        cd modules/prime
+        pip install .
+
+    - name: Install xfel_regression
+      run: |
+        cd modules
+        git clone --filter=blob:none --no-checkout \
+          https://gitlab.com/cctbx/xfel_regression.git
+        cd xfel_regression
+        git sparse-checkout init
+        git sparse-checkout set prime_test_data test
+        git checkout main
+        cd ../../build
+        source ../dials
+        libtbx.configure xfel_regression
+
+    - name: Run tests
+      run: |
+        source dials
+        cd build
+        pytest ../modules/xfel_regression/test/prime/tst_end2end.py
+        pytest ../modules/xfel_regression/test/prime/tst_index_ambiguity_end2end.py

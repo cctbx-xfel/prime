@@ -1,0 +1,8 @@
+name: prime_base
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.9
+  - cctbx-base
+  - setuptools
+  - boost-cpp
